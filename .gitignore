@@ -1,0 +1,6 @@
+harvest.db
+OPENAI_API_KEY.txt
+__pycache__/
+*.pyc
+.env
+static/evergreen_logo.png
