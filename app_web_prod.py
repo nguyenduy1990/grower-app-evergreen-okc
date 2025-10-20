@@ -27,10 +27,23 @@ except Exception:
 # ---------- Paths & storage ----------
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Allow Render to mount a persistent disk. If DB_DIR is set, store DB and static there.
-DB_DIR = os.getenv("DB_DIR", APP_DIR)
-os.makedirs(DB_DIR, exist_ok=True)
+# Prefer Render's DB_DIR, but fall back to a local ./data if unwritable or unset
+_db_dir_env = os.environ.get("DB_DIR")
+if _db_dir_env:
+    try:
+        os.makedirs(_db_dir_env, exist_ok=True)
+        _testfile = os.path.join(_db_dir_env, ".writetest")
+        with open(_testfile, "w") as _f:
+            _f.write("ok")
+        os.remove(_testfile)
+        DB_DIR = _db_dir_env
+    except Exception:
+        DB_DIR = os.path.join(APP_DIR, "data")
+else:
+    DB_DIR = os.path.join(APP_DIR, "data")
 
+os.makedirs(DB_DIR, exist_ok=True)
+os.environ["DB_DIR"] = DB_DIR  # ensure consistent downstream reads
 DB_PATH = os.path.join(DB_DIR, "harvest.db")
 
 # Static folder keeps logo; default to local static/, but prefer DB_DIR/static if DB_DIR provided
