@@ -1,9 +1,10 @@
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Evergreen Evolution — Render-ready Flask app
+Evergreen Evolution — Render-ready Flask app (updated)
 - Single file (app_web.py)
-- Uses SQLite by default, or a mountable directory via DB_DIR env var on Render
+- Uses SQLite with a Render-friendly default DB directory
 - OpenAI integration optional (for Nutrient Advisor)
 """
 
@@ -27,10 +28,14 @@ except Exception:
 # ---------- Paths & storage ----------
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Allow Render to mount a persistent disk. If DB_DIR is set, store DB and static there.
-DB_DIR = os.getenv("DB_DIR", APP_DIR)
-os.makedirs(DB_DIR, exist_ok=True)
+# Prefer Render data dir if it exists; else honor DB_DIR env; else fall back to APP_DIR
+RENDER_DATA_DIR = "/opt/render/project/src/data"
+if os.path.isdir(RENDER_DATA_DIR):
+    DB_DIR = RENDER_DATA_DIR
+else:
+    DB_DIR = os.getenv("DB_DIR", APP_DIR)
 
+os.makedirs(DB_DIR, exist_ok=True)
 DB_PATH = os.path.join(DB_DIR, "harvest.db")
 
 # Static folder keeps logo; default to local static/, but prefer DB_DIR/static if DB_DIR provided
@@ -688,6 +693,7 @@ def create_app():
     return flask_app
 
 # === TEMPORARY BACKUP DOWNLOAD ROUTE ===
+from flask import send_from_directory
 @flask_app.route("/download_db", methods=["GET"])
 def download_db():
     db_path = os.path.join(DB_DIR, "harvest.db")
