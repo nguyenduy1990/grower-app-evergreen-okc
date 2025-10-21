@@ -707,6 +707,32 @@ def download_db():
     return send_from_directory(DB_DIR, "harvest.db", as_attachment=True)
 # === END TEMPORARY ROUTE ===
 
+# === TEMPORARY UPLOAD ROUTE ===
+@flask_app.route("/upload_db", methods=["GET", "POST"])
+def upload_db():
+    key = request.args.get("key", "")
+    expected = os.getenv("UPLOAD_KEY", "evergreen123")
+    if key != expected:
+        return "Unauthorized. Append ?key=evergreen123 or set UPLOAD_KEY env.", 403
+
+    if request.method == "GET":
+        return """
+        <form method="post" enctype="multipart/form-data">
+          <input type="file" name="file" />
+          <button type="submit">Upload</button>
+        </form>
+        """, 200
+
+    file = request.files.get("file")
+    if not file:
+        return "No file provided.", 400
+    os.makedirs(DB_DIR, exist_ok=True)
+    save_path = os.path.join(DB_DIR, "harvest.db")
+    file.save(save_path)
+    return f"Uploaded to {save_path}", 200
+# === END UPLOAD ROUTE ===
+
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5000"))
     # Bind to all interfaces; Render uses PORT env var
